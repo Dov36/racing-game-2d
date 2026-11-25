@@ -8,7 +8,8 @@ from constants import (
 
 
 class Car:
-    """Modèle MVC : Car est le modèle, elle ne fait que calculer le mouvement, le contrôleur lit le clavier, et la vue dessine"""
+    """Modèle MVC : Car est le modèle, elle ne fait que calculer le mouvement, 
+    le contrôleur lit le clavier, et la vue dessine"""
 
     def __init__(self, x: float, y: float, angle: float = 0.0):
         self.x = x  # position en pixels
@@ -29,15 +30,18 @@ class Car:
             self.speed = -CAR_MAX_REVERSE
 
     def turn_left(self) -> None:
-        self.angle += CAR_TURN_SPEED  # Sens trigo : l'angle qui augmente fait tourner vers la gauche
+    # Sens trigo : l'angle qui augmente fait tourner vers la gauche
+        self.angle += CAR_TURN_SPEED  
 
     def turn_right(self) -> None:
         self.angle -= CAR_TURN_SPEED
 
     def update(self) -> None:
-        # Mise à jour de la vitesse de la voiture en fonction de la friction de l'air, puis de sa position 
+        # Mise à jour de la vitesse de la voiture en fonction 
+        # de la friction de l'air, puis de sa position 
         self.speed *= AIR_FRICTION
         fx, fy = self.forward()
-        # Quand la voiture avance vers un côté, le % fait ressortir la voiture sur le coté opposé de l'écran
+        # Quand la voiture avance vers un côté, le % fait ressortir la voiture sur 
+        # le côté opposé de l'écran
         self.x = (self.x + self.speed * fx) % WINDOW_WIDTH
         self.y = (self.y + self.speed * fy) % WINDOW_HEIGHT
