@@ -15,16 +15,29 @@ CAR_MAX_REVERSE = 2.0     # vitesse maximale en marche arrière
 # La vitesse est multipliée par ce coefficient à chaque frame : c'est le frottement de l'air.
 # Il limite la vitesse maximale (environ 5 pixels/frame) et fait ralentir la voiture
 # quand on lâche l'accélérateur.
-
 AIR_FRICTION = 0.99
+
+BOOST_ACCELERATION = 0.4  # ajouté à la vitesse à chaque frame passée sur un bloc de boost
 
 CAR_WIDTH = 30
 CAR_HEIGHT = 50
 
 
 class GameState:
+    """Les états de l'automate du jeu.
+
+    MENU    --Entrée-------------------------------> RACING
+    MENU    --Échap--------------------------------> quitter le jeu
+    RACING  --Échap--------------------------------> MENU
+    RACING  --un joueur termine tous ses tours-----> RESULTS
+    RESULTS --Entrée (rejouer)---------------------> RACING
+    RESULTS --Échap--------------------------------> MENU
+    """
+
+    
     MENU = "menu"
     RACING = "racing"
+    RESULTS = "results"
 
 
 # --- Couleurs UI ---
