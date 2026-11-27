@@ -1,7 +1,7 @@
-from constants import GameState, GRID_ROWS, GRID_COLS, TILE_SIZE
+from constants import GameState
 from model.car import Car
 from model.circuit import Circuit
-from model.road_tile import RoadTile
+from model.tracks import TRACK_TEXT, TRACK_START_ANGLE
 
 
 class GameModel:
@@ -12,30 +12,29 @@ class GameModel:
 
     def __init__(self):
         self.state: str = GameState.MENU      # état courant de l'automate du jeu
-        self.circuit: Circuit | None = None   # créé au lancement de la course
+        self.circuit: Circuit | None = None   # construit au lancement de la course
         self.car: Car | None = None
 
     def load_circuit(self) -> None:
-        """Construit un circuit de GRID_ROWS lignes et GRID_COLS colonnes de cases de route,
-        puis place la voiture au départ."""
-        grid = [[RoadTile(col=col_idx, row=row_idx)
-                 for col_idx in range(GRID_COLS)]
-                for row_idx in range(GRID_ROWS)]
-        self.circuit = Circuit(grid=grid)
+        """Construit le circuit (TRACK_TEXT), puis place la voiture sur la case de départ."""
+        self.circuit = Circuit.from_text(TRACK_TEXT)
         self.spawn_car()
 
     def spawn_car(self) -> None:
-        """Crée la voiture au centre de sa case de départ (colonne 7, ligne 1).
+        """Crée la voiture sur la case de départ du joueur 1 (bloc "1").
 
-        La voiture travaille en pixels : on convertit donc la case en coordonnées.
+        find_block renvoie la liste des cases qui portent ce bloc :
+        on prend la première.
         """
-        start_col, start_row = 7, 1
-        x = start_col * TILE_SIZE + TILE_SIZE / 2
-        y = start_row * TILE_SIZE + TILE_SIZE / 2
-        self.car = Car(x, y)
+        start = self.circuit.find_block("1")[0]
+        self.car = Car(start.col, start.row, TRACK_START_ANGLE)
 
     def update(self) -> None:
-        """Fait avancer le jeu d'une frame : la voiture se déplace seulement pendant la course."""
+        """Fait avancer le jeu d'une frame : la voiture lit le terrain
+        de sa case, puis se déplace."""
         if self.state != GameState.RACING or self.circuit is None:
             return
-        self.car.update()
+        tile = self.circuit.get_tile_at_pixel(self.car.x, self.car.y)
+        if tile is not None:
+            self.car.terrain = tile.physics
+        self.car.update_physics()

@@ -7,6 +7,17 @@ from constants import (
 from model.game_model import GameModel
 
 
+
+# Couleur de fond de chaque terrain (le nom vient de tile.terrain)
+TERRAIN_COLORS = {
+    "road": (90, 90, 100),     # route : gris
+    "grass": (70, 150, 70),    # herbe : vert
+    "dirt": (150, 105, 60),    # terre : marron
+    "ice": (170, 220, 245),    # glace : bleu clair
+    "void": (10, 10, 18),      # vide : presque noir
+}
+
+
 class GameView:
     """Vue du jeu (V de MVC) : dessine l'état du modèle avec pygame.
 
@@ -52,14 +63,40 @@ class GameView:
         if model.circuit is None:
             return
 
-        for row_idx, row in enumerate(model.circuit.grid):
-            for col_idx, tile in enumerate(row):
-                sprite = tile.get_sprite(TILE_SIZE)
-                self.screen.blit(
-                    sprite, (col_idx * TILE_SIZE, row_idx * TILE_SIZE))
+        for tile in model.circuit.tiles():
+            self._draw_tile(tile)
 
         self._draw_car(model.car)
         self._draw_hud(model.car)
+
+    def _draw_tile(self, tile) -> None:
+        """Dessine une case : la couleur de son terrain, puis son bloc éventuel."""
+        rect = pygame.Rect(tile.col * TILE_SIZE, tile.row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        pygame.draw.rect(self.screen, TERRAIN_COLORS.get(tile.terrain, COLOR_BG), rect)
+
+        if tile.block == "L":                      # ligne d'arrivée : damier
+            self._draw_checkered(rect)
+        elif tile.block == "C":                    # point de passage : cadre jaune
+            pygame.draw.rect(self.screen, COLOR_ACCENT, rect, 4)
+        elif tile.block == "B":                    # boost : carré orange
+            pygame.draw.rect(self.screen, (255, 140, 0), rect.inflate(-16, -16), border_radius=6)
+        elif tile.block in ("1", "2"):             # départs : le numéro du joueur
+            text = self.font.render(tile.block, True, COLOR_TEXT)
+            self.screen.blit(text, text.get_rect(center=rect.center))
+
+        if tile.terrain != "void":
+            pygame.draw.rect(self.screen, (0, 0, 0), rect, 1)   # quadrillage
+
+    def _draw_checkered(self, rect: pygame.Rect) -> None:
+        """Dessine un damier noir et blanc dans la case (ligne d'arrivée)."""
+        square = TILE_SIZE // 4
+        for i in range(4):
+            for j in range(4):
+                color = (240, 240, 240) if (i + j) % 2 == 0 else (20, 20, 20)
+                pygame.draw.rect(self.screen, color,
+                                 (rect.x + i * square, rect.y + j * square, square, square))
+
+
 
     def _draw_car(self, car) -> None:
         """Dessine la voiture : un rectangle rouge tourné selon son angle.
