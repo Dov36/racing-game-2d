@@ -10,7 +10,7 @@ from controller.input_handler import InputHandler
 
 
 class GameController:
-    """Contrôleur du jeu (C de MVC).
+    """Contrôleur du jeu.
 
     Il fait tourner la boucle principale, lit les événements du clavier,
     les traduit en actions sur le modèle, puis demande à la vue de dessiner.
@@ -18,12 +18,12 @@ class GameController:
     """
 
     def __init__(self):
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        self.clock = pygame.time.Clock()
-        self.model = GameModel()
-        self.view = GameView(self.screen)
-        self.input_handler = InputHandler()
-        self.running = True
+        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))        # Ouvre l'ecran du jeu aux dimensions Largeur*Longueur (Dimension venant du fichier constant.py)
+        self.clock = pygame.time.Clock()         
+        self.model = GameModel()                                                    # Creation du modele.
+        self.view = GameView(self.screen)                                           # Creation de la vue.
+        self.input_handler = InputHandler()                                         # Creation de l'objet qui lit le clavier
+        self.running = True                                                         # Tant que running est True, le jeu continue.
 
     def run(self) -> None:
         """Boucle principale : une itération correspond à une frame (FPS fois par seconde).
@@ -71,18 +71,15 @@ class GameController:
     def update(self) -> None:
         """Pendant la course, lit les touches maintenues et met à jour le modèle.
 
-        Au jalon 0 il n'y a qu'une voiture : elle obéit aux touches
-        du joueur 1 (Z Q S D) comme à celles du joueur 2 (flèches).
+        Chaque joueur conduit sa propre voiture : le joueur 1 avec Z Q S D,
+        le joueur 2 avec les flèches.
         """
         if self.model.state != GameState.RACING:
             return
 
-        keys_p1 = self.input_handler.get_inputs(0)
-        keys_p2 = self.input_handler.get_inputs(1)
-        # Une action est demandée si l'un des deux joueurs appuie sur sa touche.
-        player_input = {action: keys_p1[action] or keys_p2[action] for action in keys_p1}
-
-        self.apply_input(self.model.car, player_input)
+        for index, player in enumerate(self.model.players):
+            player_input = self.input_handler.get_inputs(index)
+            self.apply_input(player.car, player_input)
         self.model.update()
 
     def apply_input(self, car, player_input: dict) -> None:

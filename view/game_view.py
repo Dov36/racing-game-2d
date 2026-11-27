@@ -8,6 +8,12 @@ from model.game_model import GameModel
 
 
 
+# Couleur de la voiture de chaque joueur (indice 0 : joueur 1, indice 1 : joueur 2)
+PLAYER_COLORS = [
+    (230, 60, 60),    # joueur 1 : rouge
+    (60, 120, 230),   # joueur 2 : bleu
+]
+
 # Couleur de fond de chaque terrain (le nom vient de tile.terrain)
 TERRAIN_COLORS = {
     "road": (90, 90, 100),     # route : gris
@@ -66,8 +72,9 @@ class GameView:
         for tile in model.circuit.tiles():
             self._draw_tile(tile)
 
-        self._draw_car(model.car)
-        self._draw_hud(model.car)
+        for index, player in enumerate(model.players):
+            self._draw_car(player.car, PLAYER_COLORS[index])
+        self._draw_hud(model.players)
 
     def _draw_tile(self, tile) -> None:
         """Dessine une case : la couleur de son terrain, puis son bloc éventuel."""
@@ -98,27 +105,28 @@ class GameView:
 
 
 
-    def _draw_car(self, car) -> None:
-        """Dessine la voiture : un rectangle rouge tourné selon son angle.
+    def _draw_car(self, car, color: tuple[int, int, int]) -> None:
+        """Dessine une voiture : un rectangle de la couleur du joueur, tourné selon son angle.
 
         Le rectangle est d'abord dessiné tourné vers la droite (angle 0),
         et la bande blanche (le pare-brise) indique l'avant de la voiture.
         """
         body = pygame.Surface((CAR_HEIGHT, CAR_WIDTH), pygame.SRCALPHA)
-        pygame.draw.rect(body, (230, 60, 60), body.get_rect(), border_radius=6)
+        pygame.draw.rect(body, color, body.get_rect(), border_radius=6)
         pygame.draw.rect(body, (255, 255, 255), (CAR_HEIGHT - 16, 4, 8, CAR_WIDTH - 8), border_radius=2)
         rotated = pygame.transform.rotate(body, car.angle)   # rotate tourne dans le sens trigonométrique
         self.screen.blit(rotated, rotated.get_rect(center=(int(car.x), int(car.y))))
 
-    def _draw_hud(self, car) -> None:
-        """Affiche en bas de l'écran la vitesse et l'angle de la voiture, et un rappel des commandes.
+    def _draw_hud(self, players) -> None:
+        """Affiche en bas de l'écran la vitesse de chaque joueur et un rappel des commandes.
 
         Le bandeau est semi-transparent pour laisser voir le circuit en dessous.
         """
         lines = [
-            (f"Vitesse : {car.speed:5.2f} px/frame     Angle : {car.angle % 360:5.1f}°", COLOR_ACCENT),
-            ("Z / ↑ : avancer   S / ↓ : freiner, reculer   Q D / ← → : tourner   Échap : menu", COLOR_TEXT),
+            (f"{player.display_name()} : {player.car.speed:5.2f} px/frame", PLAYER_COLORS[index])
+            for index, player in enumerate(players)
         ]
+        lines.append(("J1 : Z Q S D     J2 : flèches     Échap : menu", COLOR_TEXT))
         panel_height = 16 + len(lines) * 26
         panel = pygame.Surface((WINDOW_WIDTH, panel_height), pygame.SRCALPHA)
         panel.fill((*COLOR_PANEL, 200))   # 200 sur 255 : légèrement transparent
