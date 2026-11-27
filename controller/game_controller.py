@@ -54,18 +54,26 @@ class GameController:
             self.handle_menu_key(key)
         elif state == GameState.RACING:
             self.handle_racing_key(key)
+        elif state == GameState.RESULTS:
+            self.handle_results_key(key)
 
     def handle_menu_key(self, key: int) -> None:
         """Dans le menu : Entrée lance la course, Échap quitte le jeu."""
         if key == pygame.K_RETURN:
-            self.model.load_circuit()
-            self.model.state = GameState.RACING
+            self.model.start_race()
         elif key == pygame.K_ESCAPE:
             self.quit()
 
     def handle_racing_key(self, key: int) -> None:
         """Pendant la course : Échap ramène au menu principal."""
         if key == pygame.K_ESCAPE:
+            self.model.state = GameState.MENU
+
+    def handle_results_key(self, key: int) -> None:
+        """Sur l'écran des résultats : Entrée relance une course, Échap ramène au menu."""
+        if key == pygame.K_RETURN:
+            self.model.start_race()   # nouvelle course, tours et chrono remis à zéro
+        elif key == pygame.K_ESCAPE:
             self.model.state = GameState.MENU
 
     def update(self) -> None:

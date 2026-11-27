@@ -42,6 +42,10 @@ class GameView:
             self._draw_menu(model)
         elif model.state == GameState.RACING:
             self._draw_racing(model)
+        elif model.state == GameState.RESULTS:
+            # On laisse la course figée en fond et on pose les résultats par-dessus
+            self._draw_racing(model)
+            self._draw_results(model)
         pygame.display.flip()
 
     def _draw_menu(self, model: GameModel) -> None:
@@ -74,7 +78,7 @@ class GameView:
 
         for index, player in enumerate(model.players):
             self._draw_car(player.car, PLAYER_COLORS[index])
-        self._draw_hud(model.players)
+        self._draw_hud(model)
 
     def _draw_tile(self, tile) -> None:
         """Dessine une case : la couleur de son terrain, puis son bloc éventuel."""
@@ -117,16 +121,27 @@ class GameView:
         rotated = pygame.transform.rotate(body, car.angle)   # rotate tourne dans le sens trigonométrique
         self.screen.blit(rotated, rotated.get_rect(center=(int(car.x), int(car.y))))
 
-    def _draw_hud(self, players) -> None:
-        """Affiche en bas de l'écran la vitesse de chaque joueur et un rappel des commandes.
+    def _draw_hud(self, model: GameModel) -> None:
+        """Affiche en bas de l'écran le tour de chaque joueur, sa vitesse, le chrono
+        et un rappel des touches.
 
-        Le bandeau est semi-transparent pour laisser voir le circuit en dessous.
+        Le bandeau est semi-transparent pour qu'on voie encore le circuit dessous.
         """
-        lines = [
-            (f"{player.display_name()} : {player.car.speed:5.2f} px/frame", PLAYER_COLORS[index])
-            for index, player in enumerate(players)
-        ]
+        race = model.race
+        lines = []
+        for index, player in enumerate(model.players):
+            # race.laps compte les tours FINIS : le tour en cours, c'est un de plus.
+            # min(...) évite d'afficher "Tour 4/3" quand le joueur vient de gagner.
+            lap = min(race.laps[index] + 1, race.total_laps)
+            lines.append((
+                f"{player.display_name()} : tour {lap}/{race.total_laps}"
+                f"   portes {race.gates_passed(index)}/{len(race.gates)}"
+                f"   vitesse {player.car.speed:4.1f}",
+                PLAYER_COLORS[index],
+            ))
+        lines.append((f"Temps : {race.time_seconds():5.1f} s", COLOR_ACCENT))
         lines.append(("J1 : Z Q S D     J2 : flèches     Échap : menu", COLOR_TEXT))
+
         panel_height = 16 + len(lines) * 26
         panel = pygame.Surface((WINDOW_WIDTH, panel_height), pygame.SRCALPHA)
         panel.fill((*COLOR_PANEL, 200))   # 200 sur 255 : légèrement transparent
@@ -135,3 +150,31 @@ class GameView:
         for i, (line, color) in enumerate(lines):
             text = self.small_font.render(line, True, color)
             self.screen.blit(text, (14, top + 8 + i * 26))
+
+    def _draw_results(self, model: GameModel) -> None:
+        """Dessine l'écran de fin : un panneau au milieu avec le gagnant, le temps
+        de la course et les touches pour rejouer ou revenir au menu."""
+        race = model.race
+        winner = model.players[race.winner]
+        cx, cy = WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2
+
+        # Un voile sombre sur tout l'écran pour que le panneau ressorte
+        veil = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        veil.fill((0, 0, 0, 150))
+        self.screen.blit(veil, (0, 0))
+
+        rect = pygame.Rect(0, 0, 460, 240)
+        rect.center = (cx, cy)
+        pygame.draw.rect(self.screen, COLOR_PANEL, rect, border_radius=10)
+        pygame.draw.rect(self.screen, COLOR_PANEL_BORDER, rect, 2, border_radius=10)
+
+        # (texte, couleur, police, hauteur par rapport au centre)
+        lines = [
+            ("Course terminée !", COLOR_ACCENT, self.font, -80),
+            (f"{winner.display_name()} gagne", PLAYER_COLORS[race.winner], self.font, -30),
+            (f"Temps : {race.time_seconds():.1f} s", COLOR_TEXT, self.small_font, 15),
+            ("Entrée : rejouer     Échap : menu", COLOR_TEXT, self.small_font, 75),
+        ]
+        for text, color, font, dy in lines:
+            surf = font.render(text, True, color)
+            self.screen.blit(surf, surf.get_rect(center=(cx, cy + dy)))
